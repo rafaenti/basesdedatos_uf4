@@ -29,12 +29,9 @@ let public_files = new node_static.Server("pub");
 
 http.createServer( (request, response) => {
 	if (request.url == "/chat"){
-//		console.log("Entrando en el chat");
 		let cursor = chat_db.collection("chat").find({});
 
 		cursor.toArray().then( (data) => {
-			//console.log(data);
-
 			response.writeHead(200, {'Content-Type': 'text/plain'});
 
 			response.write( JSON.stringify(data) );
@@ -44,6 +41,37 @@ http.createServer( (request, response) => {
 
 		return;
 	}
+
+
+	if (request.url == "/recent"){
+		const estimated_count = chat_db.collection("chat").estimatedDocumentCount();
+	
+		estimated_count.then( (count) => {
+			console.log(count);
+
+			const MAX = 5;
+
+			let cursor = chat_db.collection("chat").find({}, {
+					skip: count - MAX,
+					limit: MAX,
+					sort: { $natural:1 }
+				});
+	
+			cursor.toArray().then( (data) => {
+				response.writeHead(200, {'Content-Type': 'text/plain'});
+
+				response.write( JSON.stringify(data) );
+
+				response.end();
+			});
+
+		});
+
+		return;
+	}
+
+
+
 
 	if (request.url == "/submit"){
 		console.log("Envío de datos");
@@ -57,16 +85,21 @@ http.createServer( (request, response) => {
 			
 			let chat_data = JSON.parse(Buffer.concat(body).toString());
 
-			 
+			chat_db.collection("chat").insertOne({
+				user: chat_data.chat_user,
+				msg: chat_data.chat_msg,
+				date: Date.now()
+			});			 
 
 		});
-
-	
 
 		response.end();
 
 		return;
 	}
+	
+
+
 
 	public_files.serve(request, response);
 
