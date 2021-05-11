@@ -28,8 +28,15 @@ console.log("Inicializando servidor chat");
 let public_files = new node_static.Server("pub");
 
 http.createServer( (request, response) => {
-	if (request.url == "/chat"){
-		let cursor = chat_db.collection("chat").find({});
+	if (request.url.startsWith("/chat")){
+		let info = request.url.split("=");
+		console.log(info[1]);
+		
+		let query = {
+			date : { $gt : parseInt(info[1]) }
+		};
+
+		let cursor = chat_db.collection("chat").find(query);
 
 		cursor.toArray().then( (data) => {
 			response.writeHead(200, {'Content-Type': 'text/plain'});
